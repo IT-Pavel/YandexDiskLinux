@@ -1,0 +1,4 @@
+__pycache__/*
+.vscode/*
+models/__pycache__/*
+windows/__pycache__/*
