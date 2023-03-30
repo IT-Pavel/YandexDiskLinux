@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'mainwindow.ui'
+# Form implementation generated from reading ui file 'windows/mainwindow.ui'
 #
 # Created by: PyQt6 UI code generator 6.4.2
 #
@@ -20,7 +20,8 @@ class Ui_MainWindow(object):
         self.splitter = QtWidgets.QSplitter(parent=self.centralwidget)
         self.splitter.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.splitter.setObjectName("splitter")
-        self.fileTree = QtWidgets.QTreeView(parent=self.splitter)
+        self.fileTree = QtWidgets.QTreeWidget(parent=self.splitter)
+        self.fileTree.setHeaderHidden(True)
         self.fileTree.setObjectName("fileTree")
         self.fileTable = QtWidgets.QTableView(parent=self.splitter)
         self.fileTable.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.MultiSelection)

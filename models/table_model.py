@@ -2,8 +2,6 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import QAbstractTableModel, Qt
 
 from .file_model import FileType
-
-
 class FileTableModel(QAbstractTableModel):
     def __init__(self, data, headers) -> None:
         super(FileTableModel, self).__init__()
@@ -41,6 +39,8 @@ class FileTableModel(QAbstractTableModel):
         return len(self._data)
 
     def columnCount(self, index) -> int:
+        if len(self._data)==0:
+            return 0
         return len(self._data[0])
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = ...):

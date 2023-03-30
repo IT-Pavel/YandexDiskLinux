@@ -20,7 +20,11 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QTreeView" name="fileTree"/>
+      <widget class="QTreeWidget" name="fileTree">
+       <property name="headerHidden">
+        <bool>true</bool>
+       </property>
+      </widget>
       <widget class="QTableView" name="fileTable">
        <property name="selectionMode">
         <enum>QAbstractItemView::MultiSelection</enum>
