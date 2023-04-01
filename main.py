@@ -2,61 +2,27 @@ import os
 import sys
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtCore import Qt, QModelIndex
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidgetItem
+from PyQt6.QtCore import Qt, QModelIndex,QPoint
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidgetItem, QMenu
 
 from models.file_model import FileInfo, FileType
 from models.file_tree_model import FileTreeModel
 from models.table_model import FileTableModel
 from windows.main_window import Ui_MainWindow
 
+from database import Base, Database, FolderList
+import database
+
 YaDiskPath: str = '/home/it-pavel/Yandex.Disk'
 
-fileList: list = list()
+fileList: list = []
 
-table_headers = ['', 'Имя', 'Синхр.'] 
+table_headers = ['', 'Имя', 'Синхр.']
 
 ui: Ui_MainWindow = None
 
 
 def OnLoad():
-    ls_res = os.listdir(YaDiskPath)
-    for item in ls_res:
-        if item[0] == ".":
-            continue
-        fileItem: FileInfo = FileInfo()
-        fileItem.Name = item
-        fileItem.Path = f"{YaDiskPath}/{item}"
-        if os.path.isfile(fileItem.Path):
-            fileItem.Type = FileType.File
-        if os.path.isdir(fileItem.Path):
-            fileItem.Type = FileType.Folder
-        if os.path.islink(fileItem.Path):
-            fileItem.FileType = FileType.Link
-        fileList.append(fileItem)
-
-    fileList.sort(key=lambda x: x.Path)
-    fileList.sort(key=lambda x: x.Type)
-
-    dirList = list()
-    for item in fileList:
-        if item.Type == FileType.Folder:
-            dirList.append(item)
-
-    dataTable: list = list()
-    dataTree: list = list()
-    
-    # item:FileInfo
-    for item in fileList:
-        dataTable.append([
-            item.Type,
-            item.Name,
-            item.IsSynchronyze])
-        if item.Type == FileType.Folder:
-            dataTree.append(item)
-
-    tableModel = FileTableModel(dataTable, table_headers)
-    ui.fileTable.setModel(tableModel)
     items = []
     item = QTreeWidgetItem(["Yandex.Disk"])
     item.addChild(QTreeWidgetItem(['']))
@@ -64,6 +30,7 @@ def OnLoad():
     ui.fileTree.setColumnCount(1)
     ui.fileTree.insertTopLevelItems(0, items.copy())
     ui.fileTree.topLevelItem(0).setExpanded(True)
+    fileTreeItemCliked(ui.fileTree.topLevelItem(0))
 
 
 def ConfigureUi() -> None:
@@ -99,8 +66,30 @@ def fileTreeExpanded(item: QTreeWidgetItem):
 
 
 def fileTreeItemCliked(item: QTreeWidgetItem):
-    currentPath:str = buildPath(item)
+    currentPath: str = buildPath(item)
     fillFileTable(currentPath)
+
+# def fileTableClicked(index:QModelIndex):
+#     print(index)
+
+def fileTableCustomMenuRequested(pos:QPoint):
+    selIndexes:list[QModelIndex] = ui.fileTable.selectedIndexes()
+    headerCount:int = ui.fileTable.horizontalHeader().count()
+    selRowsCount = len(selIndexes)/headerCount
+    counter = 0
+    rowsSel:list[str] = list()
+    if len(ui.fileTree.selectedItems()):
+        selItems = ui.fileTree.selectedItems()
+        selItems[0].data()
+    
+    while counter<selRowsCount:
+        rowsSel.append(selIndexes[(counter*headerCount)+1].data(Qt.ItemDataRole.DisplayRole))
+        counter+=1
+    print(rowsSel)
+        
+    menu = QMenu()
+    syncAction = menu.addAction("Синхронизировать")
+    menu.exec(ui.fileTable.mapToGlobal(pos))
 
 def buildPath(item: QTreeWidgetItem) -> str:
     folderList: list = list()
@@ -117,14 +106,15 @@ def buildPath(item: QTreeWidgetItem) -> str:
         currentPath += f"/{folder}"
     return currentPath
 
-def fillFileTable(path:str)->None:
+
+def fillFileTable(path: str) -> None:
     ls_res = os.listdir(path)
-    fileList:list = []
+    fileList: list = []
     for ls_item in ls_res:
-        fileItem:FileInfo = FileInfo()
+        fileItem: FileInfo = FileInfo()
         fileItem.Name = ls_item
         fileItem.Path = f'{path}/{ls_item}'
-        
+
         if os.path.isdir(fileItem.Path):
             fileItem.Type = FileType.Folder
         if os.path.isfile(fileItem.Path):
@@ -132,20 +122,21 @@ def fillFileTable(path:str)->None:
         if os.path.islink(fileItem.Path):
             fileItem.Type = FileType.Link
         fileList.append(fileItem)
-    
+
     fileList.sort(key=lambda x: x.Path)
     fileList.sort(key=lambda x: x.Type)
-    
+
     dataTable: list = []
-    item:FileInfo
+    item: FileInfo
     for item in fileList:
         dataTable.append([
             item.Type,
             item.Name,
             item.IsSynchronyze])
-    
-    tableModel:FileTableModel = FileTableModel(dataTable,table_headers)
+
+    tableModel: FileTableModel = FileTableModel(dataTable, table_headers)
     ui.fileTable.setModel(tableModel)
+
 
 def main():
     global ui
@@ -154,18 +145,25 @@ def main():
     ui = Ui_MainWindow()
     ui.setupUi(window)
 
+    db = Database()
+    if not os.path.exists(db.DATABASE_FILE):
+        Base.metadata.create_all(db.engine)
+
     ConfigureUi()
 
     window.show()
 
     # Connect events
+    #File tree events
     ui.fileTree.itemExpanded.connect(fileTreeExpanded)
     ui.fileTree.itemClicked.connect(fileTreeItemCliked)
+    
+    #File table events
+    ui.fileTable.customContextMenuRequested.connect(fileTableCustomMenuRequested)
 
     OnLoad()
 
     sys.exit(app.exec())
-
 
 if __name__ == "__main__":
     main()
